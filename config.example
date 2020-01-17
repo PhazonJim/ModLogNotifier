@@ -1,0 +1,10 @@
+#Rename to config.yaml
+client:
+  client_id: "<client id>"
+  user_agent: "<user agent>"
+  client_secret: "<client secret>"
+  username: "<reddit username>"
+  password: "<reddit password>"
+mod_log_depth: 25
+subreddit: "<subreddit name>"
+webhook: 'https://discordapp.com/api/webhooks/1234/12345'
