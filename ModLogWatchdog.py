@@ -1,8 +1,6 @@
 import praw
-import csv
 import json
 import os
-import re
 import yaml
 import textwrap
 from discord_webhook import DiscordWebhook, DiscordEmbed
@@ -10,7 +8,7 @@ from discord_webhook import DiscordWebhook, DiscordEmbed
 #===Constants===#
 CONFIG_FILE = os.path.join(os.path.dirname(__file__),"config.yaml")
 CACHE_FILE =  os.path.join(os.path.dirname(__file__), "cache.json")
-BAD_WORDS = ['fuck']
+
 #===Globals===#
 #Config file
 config = None
@@ -25,7 +23,7 @@ def loadConfig():
         exit()
 
 def loadCache():
-    postCache = {}
+    postCache = []
     try:
         with open(CACHE_FILE, "r") as fin:
             postCache = json.load(fin)
@@ -39,23 +37,30 @@ def initReddit():
     return reddit
 
 def saveCache(postCache):
+    postCache = postCache[-(config['cache_size']):]
     with open(CACHE_FILE, "w") as fout:
         for chunk in json.JSONEncoder().iterencode(postCache):
             fout.write(chunk)
 
-def post_webhook(log, report):
-    item_id = log.id
-    is_submission = log._submission
+def post_webhook(log, report, phrase):
+    is_submission = isinstance(log, praw.models.Submission)
+    recipient = config['report_config'][phrase]['recipient']
+    webhook = config['report_config'][phrase]['webhook']
     message = ''
-    if is_submission:
-        message += ('**Submission Title:** {}\n'.format(log.target_title))
+    if recipient:
+        message += ('**Recipient:** {}\n'.format(recipient))
     if report:
         message += ('**Report:** {}\n'.format(textwrap.shorten(report[0], width=1000, placeholder="...(Too long to preview full content)...")))
-    if log.body:
-        message += ('**Content:** {}\n'.format(textwrap.shorten(log.body, width=1000, placeholder="...(Too long to preview full content)...")))
+    if is_submission:
+        message += ('**Submission Title:** {}\n'.format(log.title))
+        if log.selftext:
+            message += ('**Content:** {}\n'.format(textwrap.shorten(log.selftext, width=500, placeholder="...(Too long to preview full content)...")))
+    else:
+        if log.body:
+            message += ('**Content:** {}\n'.format(textwrap.shorten(log.body, width=1000, placeholder="...(Too long to preview full content)...")))
     message += ('**Author:** {}\n'.format(log.author.name))
     message += ('**Permalink:** https://www.reddit.com{}\n'.format(log.permalink))
-    webhook = DiscordWebhook(url=config["webhook"], content=message)
+    webhook = DiscordWebhook(url=webhook, content=message)
     webhook.execute()
 
 if __name__ == "__main__":
@@ -64,20 +69,18 @@ if __name__ == "__main__":
     postCache = loadCache()
     reddit = initReddit()
 
-    #Local vars
-    submissions = {}
-    logs = []
-    #Only check for removelink actions, grab last X since we dont want to spend too much time grabbing post information
     while(True):
         try:
             for log in reddit.subreddit(config["subreddit"]).mod.stream.reports():
                 item_id = log.id
                 if log.mod_reports:
                     for report in log.mod_reports:
-                        if config["report_phrase"] in report[0] and item_id not in postCache:
-                            post_webhook(log, report)
-                            postCache.append(item_id)
-                            saveCache(postCache)
-        except:
+                        for phrase in config["report_config"]:
+                            if phrase.lower() in report[0].lower() and item_id not in postCache:
+                                post_webhook(log, report, phrase)
+                                postCache.append(item_id)
+                                saveCache(postCache)
+        except Exception as e:
+            print(e)
             if postCache:
                 saveCache(postCache)

@@ -1,10 +1,18 @@
 #Rename to config.yaml
 client:
-  client_id: "<client id>"
-  user_agent: "<user agent>"
-  client_secret: "<client secret>"
-  username: "<reddit username>"
-  password: "<reddit password>"
-mod_log_depth: 25
-subreddit: "<subreddit name>"
-webhook: 'https://discordapp.com/api/webhooks/1234/12345'
+  client_id: '<reddit client id>'
+  user_agent: '<user agent string>'
+  client_secret: '<reddit client secret>'
+  #Oauth disabled when using user/pass
+  username: '<username>'
+  password: "<password>"
+mod_log_depth: 100
+cache_size: 500
+subreddit: foobarbaz
+report_config:
+  "FooBar": # String to watch for in report reasons
+    recipient: False
+    webhook: 'https://discord.com/api/webhooks/1234/abcde'
+  "BarBaz":
+    recipient: '@<discordID/RoleID>'
+    webhook: 'https://discord.com/api/webhooks/1234/abcde'
