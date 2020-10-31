@@ -1,4 +1,4 @@
-# ModLogWatchdog
+# ModLogNotifier
 A reddit bot that watches for certain phrases in the report reason field for submisisons and comments in the reddit mod log and reports it to a discord webhook
 
 # Environment setup instructions
